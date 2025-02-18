@@ -86,7 +86,7 @@ export async function generateCompanyUrls(companyCodes: { [filename: string]: Ar
     }
 }
 
-// TODO
-export default (async function () {
+
+export const codes =  (async function () {
     return await generateCompanyUrls(await fetchAllCompanyCodes())
 })()

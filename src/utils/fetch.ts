@@ -1,87 +1,70 @@
-import puppeteer from 'puppeteer';
+import { getDataFromHtml, codes } from './index';
+import  selectors  from '../constants';
+import _ from 'lodash-es'
 
-// 单例浏览器实例
-let browserInstance: puppeteer.Browser | null = null;
-let isClosing = false;
+function zipWith (value: string, obj: {id: string; title: string; select?: string;}) {
+    return {value, name: obj.id}
+}
 
-/**
- * 获取浏览器实例
- * @returns {Promise<puppeteer.Browser>} 返回浏览器实例
- */
-const getBrowser = async (): Promise<puppeteer.Browser> => {
-    if (!browserInstance) {
-        browserInstance = await puppeteer.launch({
-            headless: true, // 使用新的headless模式
-            args: [
-                '--no-sandbox',
-                '--disable-setuid-sandbox',
-                '--disable-dev-shm-usage'
-            ]
-        });
-    }
-    return browserInstance;
-};
+type Item = {name:string; value: string;};
 
-/**
- * 关闭浏览器实例
- */
-export const closeBrowser = async () => {
-    if (browserInstance && !isClosing) {
-        isClosing = true;
-        try {
-            if (browserInstance) {
-                await browserInstance.close();
-                browserInstance = null;
-            }
-        } catch (error) {
-            console.error('关闭浏览器时出错:', error);
-        } finally {
-            isClosing = false;
-        }
-    }
-};
+let result: Array<{name: string; code: string; data: Array<Item>}> = [];
 
-/**
- * 从HTML页面获取数据
- * @param {string} url - 要访问的URL
- * @param {string|string[]|Function} selectors - 选择器或自定义处理函数
- * @param {Function} [getData=data=>data] - 数据处理函数
- * @returns {Promise<any>} 返回处理后的数据
- */
-export async function getDataFromHtml(url: string, selectors: string | string[] | Function, getData: (data: any) => any = data => data): Promise<any> {
-    const browser = await getBrowser();
-    const page = await browser.newPage();
+async function appendToJsonFile(obj: object) {
+    const fs = require('fs').promises;
+    const filePath = '../assets/temp.json';
     
     try {
-        // 配置页面设置
-        await page.setDefaultNavigationTimeout(120000); // 2分钟
-        await page.setDefaultTimeout(120000);
-        await page.setViewport({ width: 1280, height: 800 });
-
-        // 访问页面
-        const response = await page.goto(url, { waitUntil: 'networkidle2' });
-        if (!response || !response.ok()) {
-            throw new Error(`页面加载失败，状态码: ${response ? response.status() : '未知'}`);
+        // Read existing content if any
+        let fileContent = '';
+        try {
+            fileContent = await fs.readFile(filePath, 'utf8');
+        } catch (err) {
+            // If the file does not exist, it will be created. No need to handle this error.
+            if (err.code !== 'ENOENT') {
+                throw err;
+            }
         }
 
-        let data;
-        if (typeof selectors !== 'function') {
-            const elements = Array.isArray(selectors) ? selectors : [selectors];
-            data = await Promise.all(elements.map(async (selector) => {
-                return await page.evaluate((sel) => {
-                    const element = document.querySelector(sel);
-                    return element?.textContent?.trim() || element?.innerHTML?.trim();
-                }, selector);
-            }));
-        } else {
-            data = await selectors(page, browser);
+        // Parse existing JSON content or initialize as empty array
+        let jsonData: Array<object> = [];
+        if (fileContent) {
+            jsonData = JSON.parse(fileContent);
         }
 
-        return getData(data);
+        // Append new object to the JSON data
+        jsonData.push(obj);
+
+        // Write the updated JSON back to the file
+        await fs.writeFile(filePath, JSON.stringify(jsonData, null, 2), 'utf8');
     } catch (error) {
-        console.error('获取数据时出错:', error);
+        console.error('写入文件时出错:', error);
         throw error;
-    } finally {
-        await page.close();
     }
 }
+
+
+(async () => {
+    try {
+        const companyCodesWithUrls = await codes;
+
+        for (const filename in companyCodesWithUrls) {
+            const entries = companyCodesWithUrls[filename];
+            for (const entry of entries) {
+                const url = entry.url;
+                const data = await getDataFromHtml(url, selectors.slice(2).map(item => item.select!));
+                const res = _.zipWith(data, selectors.slice(2), zipWith) ;
+                let obj = {
+                  ...entry,
+                    data: res
+                }
+                result.push(obj)
+            }
+        }
+
+        appendToJsonFile(result);
+        
+    } catch (error) {
+        console.error('获取数据时出错:', error);
+    }
+})();

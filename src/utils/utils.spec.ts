@@ -1,6 +1,6 @@
 import { getCsvData } from './code';
 import { getStockURL } from './urls';
-import { fetchAllCompanyCodes } from './fetchData';
+import { fetchAllCompanyCodes } from './fetchCode';
 
 describe('fetchAllCompanyCodes', () => {
   it('should fetch all company codes from CSV files in the assets directory', async () => {
