@@ -36,7 +36,7 @@ async function appendToJsonFile(obj: object) {
         jsonData.push(obj);
 
         // Write the updated JSON back to the file
-        await fs.writeFile(filePath, JSON.stringify(jsonData, null, 2), 'utf8');
+        await fs.writeFile(filePath, JSON.stringify(jsonData), 'utf8');
     } catch (error) {
         console.error('写入文件时出错:', error);
         throw error;
@@ -51,7 +51,7 @@ async function appendToJsonFile(obj: object) {
         const companyCodesWithUrls = await codes;
 
         for (const filename in companyCodesWithUrls) {
-            const entries = companyCodesWithUrls[filename].slice(0, 1);
+            const entries = companyCodesWithUrls[filename];
             for (const entry of entries) {
                 const url = entry.url;
                 const data = await getDataFromHtml(url, selectors.slice(2).map(item => item.select!));
