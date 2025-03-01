@@ -8,6 +8,8 @@ import { MixinsModule } from './mixins/mixins.module';
 import { SqlModule } from './sql/sql.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import {Zq} from './companies/entities/company.entity'
+import { TestModuleModule } from './test_module/test_module.module';
+import { FffModule } from './fff/fff.module';
 
 @Module({
   imports: [ZqModule, CompaniesModule, OilModule, MixinsModule, SqlModule, TypeOrmModule.forRoot({
@@ -25,7 +27,7 @@ import {Zq} from './companies/entities/company.entity'
       extra: {
           authPlugin: 'sha256_password',
       }
-    }),],
+    }), TestModuleModule, FffModule,],
   controllers: [AppController],
   providers: [AppService],
 })

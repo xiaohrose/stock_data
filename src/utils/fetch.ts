@@ -56,6 +56,8 @@ async function appendToJsonFile(obj: object) {
                 const url = entry.url;
                 const data = await getDataFromHtml(url, selectors.slice(2).map(item => item.select!));
                 const res = _.zipWith(data, selectors.slice(2), zipWith) ;
+
+                 console.log(`done ${entry.name}, price ${res[0].value}, percent ${res[1].value}`)
                 let obj = {
                   ...entry,
                     data: res
